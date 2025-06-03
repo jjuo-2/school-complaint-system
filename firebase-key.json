@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "school-complaint-system-2646a",
+  "private_key_id": "9c58cfa3238a4bd2632fa5bfd21ff50e15a230df",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDe/qXdlGAopaEY\nNLZ74e9dnsv1qbrh6NcIWPjrHLMgXnWUYqay77aOqWjA1SThNhvhxAY96LZf2kKF\niLhCHAZ4oUGrdzSQ/TzZGBQCB6V62yQIFSgHTejxC5yezxYDm6YUI1u2IovSbM4Y\nD34ySMRVopwqBVyBoP8I8m9fpEd7tZSoROGWEaAalU96N5yql6EhW2hseXlQ86zl\njE6pOEmFWqsVlneAlPFrnWBk9l2KdlxI8hlh8L0VgplXQsnoDvmjkKq+SZvbwnqn\nc+3t1syHhJFUEX0xXIGOFfIam2/W/DHKM+kiImDJGBo44ExkQlyXF/AX8YXLD4Fo\nwLaX8knHAgMBAAECggEAA8s7UTDEDgz7V6kV7bejVelsuOpBVrSaa/bvjTh4x7Uz\ntOmUwniXl4fEU3uM3BQKl2W5YXZDHBBfj1wLHnzRk13S+zLU/x5/2YWyWXJ920A9\nNbH+c1lc/DThXkZRrpAIXFFZrxiZXmQhgYFJ+VsJlBdnJsPelgoCLMnLIUpvOOiO\n1EoVOtZa8k6WkLIPsBTPLqVPeDgLR+i6tr5X36a+/q7HyWuX5senhXneBg4mXcTO\nF3e+h9u5ffVKyvrxPq5t1JdFVis10OeVZEGJxtyMAqzI2FChCj8ZHgP50OPiQIL2\nlOCsrWyRy12gSK3pL6ZerpL9OAbHkcLbrjWH/HiDgQKBgQDzRDQ6t6jFcJsu4wv5\nRJokUKsNzzbcRXnP0t2Ntv1aWPsR+d9ceU++OtXXd1BQzxAAZNTeAh1oa6xGZNqj\nUbJYZaFqAh5I8qb/m5OWXBJRajHgkfhRVpnDg/Jl0Xd7uUfY/STMvU2uW7Wb5Fq4\nRTSBRZ1KohT4i9OTo1IV8AgxhwKBgQDqqs0IAaISw1bp4aU8gag/Lcq7JyE1DGRe\nOij8pHv9xOCGAXQ4Gfg3SxgCLEnigUXJzhxQW90feEs+6NMXSnC3ghn5dY6+GxFP\ndbyEeoECS7+hH29rBancx4jWtKkWPDD/ELsuR52LLmD3fKgMh9ofD+PZWHk6sp94\n5CZChVw1wQKBgQCpItyljphbXmWm/dmPYDFD2opzuYTNNcjxxAyiwX35WTCHWRIB\ne58EBmgzvRMsfCsF+xU9nn7P4T0QXILfVqgHafIGgJ6J3Zxaz9KXkkByNsGjABqE\ngw+5rn3UaQUIEtRve+IgL+ZYug7U6rpgsE1HLB2mjHbEMIPUfJNQCWnI9QKBgQDU\nV3Vrtz6Wx9dPjvTbyV8avC7kJsYvoGT5tpr78UKZIJsh5xLo6Obn8bVp0fWRVfR2\nZWDNfjKalVlRNZA9VQilpL4oMq3Va9zAEANjxQ4Tq8Nc4nsJVnib5Jn33kXabuDP\nDK6zc+4k0PTBPTU7EXrX/KLqOtqHuLYAyEGuk8oagQKBgFTZ6n0L8bCiQrPZyRs3\nCjB/flKe0QbxcjgIYNg+SRF/xR6qFw5m5SaLM8C6rkrnRwInjiilyf/w0MpGXMBC\n1MBhhR4DaB3ncCp7Y+SN5jK1NfliMnH6OwLg/cyRscEFnMH3n/JK80I2cURUPST2\nPDkT1KCvg2wH5LzExXHMTduG\n-----END PRIVATE KEY-----\n",
+  "client_email": "firebase-adminsdk-fbsvc@school-complaint-system-2646a.iam.gserviceaccount.com",
+  "client_id": "114787279280150139217",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40school-complaint-system-2646a.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
