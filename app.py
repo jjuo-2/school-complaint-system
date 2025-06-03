@@ -5,6 +5,15 @@ from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 import uuid
 
+# Firebase 관련 import
+try:
+    import firebase_admin
+    from firebase_admin import credentials, firestore
+    FIREBASE_AVAILABLE = True
+except ImportError:
+    FIREBASE_AVAILABLE = False
+    st.error("Firebase 패키지가 설치되지 않았습니다. requirements.txt에 firebase-admin을 추가해주세요.")
+    
 # 사용자 역할별 권한 정의
 USER_ROLES = {
     'parent': {
