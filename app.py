@@ -277,14 +277,11 @@ class FirebaseManager:
 class ComplaintSystem:
     def __init__(self, firebase_manager):
         self.firebase = firebase_manager
-        
-        # Firebase에서 데이터 로드 또는 session_state 초기화
         self.load_from_firebase()
     
     def load_from_firebase(self):
         """Firebase에서 데이터 로드"""
         if self.firebase.get_db():
-            # Firebase에서 민원 데이터 로드
             complaints = self.firebase.get_all_complaints()
             if complaints:
                 st.session_state.complaints_db = complaints
@@ -292,7 +289,6 @@ class ComplaintSystem:
                 if 'complaints_db' not in st.session_state:
                     st.session_state.complaints_db = {}
         
-        # 기존 session_state 초기화 (Firebase 연결 실패시 백업)
         if 'complaint_queue' not in st.session_state:
             st.session_state.complaint_queue = []
         if 'processing_stack' not in st.session_state:
@@ -305,7 +301,6 @@ class ComplaintSystem:
         complaint_id = str(st.session_state.complaint_counter)
         st.session_state.complaint_counter += 1
         
-        # 긴급도를 숫자로 변환 (긴급=1, 보통=2)
         urgency_value = 1 if urgency == '긴급' else 2
         
         complaint = {
@@ -326,13 +321,8 @@ class ComplaintSystem:
             }]
         }
         
-        # 우선순위 큐에 추가
         heapq.heappush(st.session_state.complaint_queue, (urgency_value, int(complaint_id)))
-        
-        # 로컬 데이터베이스에 저장
         st.session_state.complaints_db[complaint_id] = complaint
-        
-        # Firebase에 저장
         self.firebase.save_complaint(complaint_id, complaint)
         
         return complaint_id
@@ -352,11 +342,9 @@ class ComplaintSystem:
             'note': note or f'상태 변경: {new_status}'
         })
         
-        # 완료된 민원은 처리중 스택에서 제거
         if new_status == '완료' and int(complaint_id) in st.session_state.processing_stack:
             st.session_state.processing_stack.remove(int(complaint_id))
         
-        # Firebase 업데이트
         self.firebase.update_complaint(complaint_id_str, {
             'status': new_status,
             'history': complaint['history']
@@ -367,29 +355,23 @@ class ComplaintSystem:
 class AuthSystem:
     def __init__(self, firebase_manager):
         self.firebase = firebase_manager
-        
-        # Firebase에서 데이터 로드 또는 초기화
         self.load_from_firebase()
     
     def load_from_firebase(self):
         """Firebase에서 데이터 로드"""
         if self.firebase.get_db():
-            # 사용자 데이터 로드
             users = self.firebase.get_all_users()
             if users:
                 st.session_state.user_db = users
             
-            # 학생 명단 로드
             student_registry = self.firebase.get_student_registry()
             if student_registry:
                 st.session_state.student_registry = student_registry
             
-            # 교사 코드 로드
             teacher_codes = self.firebase.get_teacher_codes()
             if teacher_codes:
                 st.session_state.teacher_codes = teacher_codes
         
-        # 기본 데이터 초기화 (Firebase 연결 실패시 백업)
         if 'user_db' not in st.session_state:
             st.session_state.user_db = {
                 'admin': {
@@ -429,10 +411,7 @@ class AuthSystem:
         """교사 가입 코드 생성 (Firebase 동기화)"""
         code = str(uuid.uuid4())[:8].upper()
         st.session_state.teacher_codes.add(code)
-        
-        # Firebase에 저장
         self.firebase.save_teacher_codes(st.session_state.teacher_codes)
-        
         return code
     
     def signup_teacher_with_code(self, teacher_id: str, password: str, name: str, code: str) -> Tuple[bool, str]:
@@ -443,7 +422,6 @@ class AuthSystem:
         if teacher_id in st.session_state.user_db:
             return False, "이미 존재하는 사용자 ID입니다."
         
-        # 교사 계정 생성
         user_data = {
             'password_hash': self.hash_password(password),
             'role': 'teacher',
@@ -452,17 +430,13 @@ class AuthSystem:
         }
         
         st.session_state.user_db[teacher_id] = user_data
-        
-        # 교사 카테고리 초기화
         st.session_state.teacher_db[teacher_id] = {
             'categories': [],
             'is_master': False
         }
         
-        # 사용된 코드 제거
         st.session_state.teacher_codes.remove(code)
         
-        # Firebase에 저장
         self.firebase.save_user(teacher_id, user_data)
         self.firebase.save_teacher_codes(st.session_state.teacher_codes)
         
@@ -480,9 +454,7 @@ class AuthSystem:
             'year': year
         }
         
-        # Firebase에 저장
         self.firebase.save_student_registry(st.session_state.student_registry)
-        
         return True, f"{student_name} 학생이 명단에 추가되었습니다."
     
     def signup_parent(self, student_name: str, password: str) -> Tuple[bool, str]:
@@ -504,8 +476,6 @@ class AuthSystem:
         }
         
         st.session_state.user_db[parent_id] = user_data
-        
-        # Firebase에 저장
         self.firebase.save_user(parent_id, user_data)
         
         return True, f"{student_name} 학부모 계정이 생성되었습니다! (로그인 ID: {student_name})"
@@ -519,7 +489,6 @@ class AuthSystem:
         if user['password_hash'] != self.hash_password(password):
             return False, "비밀번호가 올바르지 않습니다."
         
-        # 로그인 성공
         st.session_state.current_user = {
             'id': user_id,
             'name': user['name'],
@@ -552,13 +521,11 @@ class AuthSystem:
         if user_role == 'admin':
             return all_complaints
         elif user_role == 'parent':
-            # 본인이 등록한 민원만
             return [c for c in all_complaints if c['created_by'] == user_id]
         elif user_role == 'teacher':
             if self.is_master_teacher(user_id):
                 return all_complaints
             else:
-                # 본인 카테고리 민원만
                 teacher_categories = st.session_state.teacher_db.get(user_id, {}).get('categories', [])
                 return [c for c in all_complaints if c['category'] in teacher_categories]
         
@@ -569,7 +536,6 @@ def render_faq_section():
     st.subheader("❓ 자주 하는 질문")
     st.info("민원 등록 전에 아래 내용을 먼저 확인해보세요!")
     
-    # 카테고리별 FAQ 표시
     for category, faqs in FAQ_DATA.items():
         with st.expander(f"📂 {category}"):
             for i, faq in enumerate(faqs, 1):
@@ -603,17 +569,14 @@ def render_admin_management():
     with tab2:
         st.write("**교사 카테고리 관리**")
         
-        # 교사 목록
         teachers = [uid for uid, user in st.session_state.user_db.items() if user['role'] == 'teacher']
         
         if teachers:
             selected_teacher = st.selectbox("교사 선택", teachers)
             
-            # 현재 카테고리 표시
             current_categories = st.session_state.teacher_db.get(selected_teacher, {}).get('categories', [])
             st.write(f"현재 담당 카테고리: {', '.join(current_categories) if current_categories else '없음'}")
             
-            # 카테고리 설정
             new_categories = st.multiselect(
                 "담당 카테고리 설정",
                 list(COMPLAINT_CATEGORIES.keys()),
@@ -621,7 +584,6 @@ def render_admin_management():
                 format_func=lambda x: COMPLAINT_CATEGORIES[x]
             )
             
-            # 마스터 권한 설정
             is_master = st.checkbox(
                 "마스터 교사 권한 (모든 카테고리 접근 가능)",
                 value=st.session_state.teacher_db.get(selected_teacher, {}).get('is_master', False)
@@ -642,12 +604,316 @@ def render_admin_management():
         st.write("**🔒 학생 명단 관리 (보안 기능)**")
         st.info("등록된 학생만 회원가입이 가능합니다.")
         
-        # CSV 파일 업로드 기능
-        st.write("**📊 CSV 파일로 학생 명단 일괄 등록**")
-        
-        # CSV 템플릿 다운로드 기능
-        col1, col2 = st.columns(2)
+        st.write("**👤 개별 학생 추가**")
+        col1, col2, col3, col4, col5 = st.columns(5)
         with col1:
-            st.info("CSV 파일 형식: 이름, 학년, 반, 학번, 연도 (첫 번째 행은 헤더)")
+            new_student_name = st.text_input("학생 이름")
         with col2:
-            #
+            new_grade = st.selectbox("학년", [1, 2, 3, 4, 5, 6])
+        with col3:
+            new_class = st.text_input("반", placeholder="1")
+        with col4:
+            new_student_id = st.text_input("학번", placeholder="47")
+        with col5:
+            new_year = st.number_input("연도", value=2025, min_value=2020, max_value=2030)
+        
+        if st.button("학생 추가") and new_student_name:
+            success, message = auth.add_student_to_registry(new_student_name, new_grade, new_class, new_student_id, new_year)
+            if success:
+                st.success(message)
+                st.rerun()
+            else:
+                st.error(message)
+        
+        st.markdown("---")
+        
+        st.write("**등록된 학생 목록**")
+        if st.session_state.student_registry:
+            student_data = []
+            for name, info in st.session_state.student_registry.items():
+                student_data.append({
+                    '이름': name,
+                    '학년': f"{info['grade']}학년",
+                    '반': f"{info['class']}반",
+                    '학번': info['student_id'],
+                    '연도': info.get('year', 2025)
+                })
+            
+            try:
+                import pandas as pd
+                df = pd.DataFrame(student_data)
+                st.dataframe(df, use_container_width=True)
+            except ImportError:
+                for data in student_data:
+                    st.write(f"- {data['이름']} ({data['학년']} {data['반']}, 학번: {data['학번']})")
+        else:
+            st.info("등록된 학생이 없습니다.")
+    
+    with tab4:
+        st.write("**시스템 현황**")
+        
+        user_stats = {}
+        for user in st.session_state.user_db.values():
+            role = user['role']
+            user_stats[role] = user_stats.get(role, 0) + 1
+        
+        st.write("**사용자 현황:**")
+        for role, count in user_stats.items():
+            st.write(f"- {USER_ROLES[role]['display_name']}: {count}명")
+        
+        complaint_stats = {}
+        for complaint in st.session_state.complaints_db.values():
+            status = complaint['status']
+            complaint_stats[status] = complaint_stats.get(status, 0) + 1
+        
+        st.write("**민원 현황:**")
+        for status, count in complaint_stats.items():
+            st.write(f"- {status}: {count}건")
+        
+        st.write(f"**학생 명단:** {len(st.session_state.student_registry)}명 등록됨")
+    
+    with tab5:
+        st.write("**Firebase 연결 상태**")
+        firebase_manager = st.session_state.firebase_manager
+        
+        if firebase_manager.get_db():
+            st.success("✅ Firebase 연결됨")
+            
+            # 컬렉션 상태 확인
+            try:
+                db = firebase_manager.get_db()
+                collections = ['users', 'complaints', 'system']
+                
+                for collection_name in collections:
+                    docs = list(db.collection(collection_name).limit(1).stream())
+                    if docs:
+                        st.write(f"📊 {collection_name}: 데이터 있음")
+                    else:
+                        st.write(f"📋 {collection_name}: 비어있음")
+                        
+            except Exception as e:
+                st.error(f"컬렉션 확인 중 오류: {e}")
+        else:
+            st.error("❌ Firebase 연결 실패")
+
+def render_auth_page():
+    """인증 페이지"""
+    auth = st.session_state.auth_system
+    
+    st.title("🏫 학교 민원처리시스템")
+    st.markdown("---")
+    
+    tab1, tab2, tab3, tab4 = st.tabs(["🔑 로그인", "❓ 자주 하는 질문", "👨‍👩‍👧‍👦 학부모 가입", "👨‍🏫 교사 가입"])
+    
+    with tab1:
+        st.subheader("로그인")
+        st.info("🔹 학부모: 학생 이름으로 로그인\n🔹 교사: 교사 ID로 로그인\n🔹 관리자: admin")
+        
+        with st.form("login_form"):
+            login_id = st.text_input("사용자 ID", placeholder="학생 이름 또는 교사 ID")
+            login_password = st.text_input("비밀번호", type="password")
+            login_submit = st.form_submit_button("로그인", use_container_width=True)
+            
+            if login_submit and login_id and login_password:
+                success, message = auth.login(login_id, login_password)
+                if success:
+                    st.success(message)
+                    st.rerun()
+                else:
+                    st.error(message)
+    
+    with tab2:
+        render_faq_section()
+    
+    with tab3:
+        st.subheader("학부모 회원가입")
+        st.info("🔒 등록된 학생의 학부모만 가입 가능합니다.")
+        st.warning("⚠️ 보안상 학생 이름을 정확히 입력해주세요. (오타,띄어쓰기 주의)")
+        
+        with st.form("parent_signup"):
+            child_name = st.text_input("자녀 이름", placeholder="정확한 학생 이름 입력")
+            parent_password = st.text_input("비밀번호", type="password")
+            parent_submit = st.form_submit_button("가입하기")
+            
+            if parent_submit and child_name and parent_password:
+                success, message = auth.signup_parent(child_name, parent_password)
+                if success:
+                    st.success(message)
+                else:
+                    st.error(message)
+    
+    with tab4:
+        st.subheader("교사 회원가입")
+        with st.form("teacher_signup"):
+            teacher_id = st.text_input("교사 ID")
+            teacher_name = st.text_input("교사 이름")
+            teacher_password = st.text_input("비밀번호", type="password")
+            teacher_code = st.text_input("교사 가입 코드 (관리자에게 문의)")
+            teacher_submit = st.form_submit_button("가입하기")
+            
+            if teacher_submit and all([teacher_id, teacher_name, teacher_password, teacher_code]):
+                success, message = auth.signup_teacher_with_code(teacher_id, teacher_password, teacher_name, teacher_code)
+                if success:
+                    st.success(message)
+                else:
+                    st.error(message)
+
+def render_complaint_details(complaint, user, complaint_sys):
+    """민원 상세 정보 렌더링"""
+    st.write(f"**카테고리:** {COMPLAINT_CATEGORIES.get(complaint['category'], complaint['category'])}")
+    st.write(f"**긴급도:** {complaint['urgency']}")
+    st.write(f"**등록자:** {complaint['created_by']}")
+    st.write(f"**등록일:** {complaint['created_at'][:19]}")
+    if complaint['assigned_to']:
+        st.write(f"**담당자:** {complaint['assigned_to']}")
+    st.write(f"**내용:** {complaint['content']}")
+    
+    if user['role'] in ['teacher', 'admin'] and complaint['status'] != '완료':
+        new_status = st.selectbox(
+            "상태 변경",
+            ['대기중', '처리중', '완료'],
+            index=['대기중', '처리중', '완료'].index(complaint['status']),
+            key=f"status_{complaint['id']}"
+        )
+        note = st.text_input("처리 메모", key=f"note_{complaint['id']}")
+        
+        if st.button(f"상태 업데이트", key=f"update_{complaint['id']}"):
+            complaint_sys.update_complaint_status(complaint['id'], new_status, note)
+            st.success("상태가 업데이트되었습니다!")
+            st.rerun()
+
+def render_complaint_system():
+    """민원 시스템 메인 페이지"""
+    auth = st.session_state.auth_system
+    complaint_sys = st.session_state.complaint_system
+    
+    user = st.session_state.current_user
+    
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        st.markdown(f"**👤 {user['name']}** ({USER_ROLES[user['role']]['display_name']})")
+    with col2:
+        if st.button("로그아웃"):
+            auth.logout()
+    
+    st.markdown("---")
+    
+    if user['role'] == 'admin':
+        render_admin_management()
+        st.markdown("---")
+    
+    if user['role'] == 'parent':
+        st.subheader("📝 민원 등록")
+        
+        with st.form("complaint_form"):
+            title = st.text_input("제목")
+            content = st.text_area("내용")
+            category = st.selectbox("카테고리", 
+                                  list(COMPLAINT_CATEGORIES.keys()),
+                                  format_func=lambda x: COMPLAINT_CATEGORIES[x])
+            urgency = st.radio("긴급도", ['보통', '긴급'], horizontal=True)
+            
+            submit = st.form_submit_button("민원 등록")
+            
+            if submit and title and content:
+                complaint_id = complaint_sys.create_complaint(title, content, category, urgency, user['id'])
+                st.success(f"민원이 등록되었습니다! (번호: {complaint_id})")
+                st.rerun()
+    
+    st.subheader("📋 민원 목록")
+    complaints = auth.list_complaints(user)
+    
+    if complaints:
+        active_complaints = [c for c in complaints if c['status'] != '완료']
+        completed_complaints = [c for c in complaints if c['status'] == '완료']
+        
+        if completed_complaints:
+            tab1, tab2 = st.tabs([f"📥 진행 중 ({len(active_complaints)})", f"✅ 처리 완료 ({len(completed_complaints)})"])
+        else:
+            tab1 = st.tabs([f"📥 진행 중 ({len(active_complaints)})"])[0]
+            tab2 = None
+        
+        with tab1:
+            if active_complaints:
+                urgent_complaints = [c for c in active_complaints if c['urgency'] == '긴급']
+                normal_complaints = [c for c in active_complaints if c['urgency'] == '보통']
+                
+                urgent_complaints.sort(key=lambda x: x['created_at'])
+                normal_complaints.sort(key=lambda x: x['created_at'])
+                
+                if urgent_complaints:
+                    st.markdown("#### 🚨 긴급 민원")
+                    for complaint in urgent_complaints:
+                        with st.expander(f"[{complaint['id']}] {complaint['title']} - {complaint['status']} 🚨"):
+                            render_complaint_details(complaint, user, complaint_sys)
+                    
+                    if normal_complaints:
+                        st.markdown("---")
+                
+                if normal_complaints:
+                    st.markdown("#### 📝 보통 민원")
+                    for complaint in normal_complaints:
+                        with st.expander(f"[{complaint['id']}] {complaint['title']} - {complaint['status']}"):
+                            render_complaint_details(complaint, user, complaint_sys)
+                
+                if not urgent_complaints and not normal_complaints:
+                    st.info("진행 중인 민원이 없습니다.")
+            else:
+                st.info("진행 중인 민원이 없습니다.")
+        
+        if tab2:
+            with tab2:
+                if completed_complaints:
+                    completed_complaints.sort(key=lambda x: x['history'][-1]['timestamp'], reverse=True)
+                    
+                    for complaint in completed_complaints:
+                        with st.expander(f"[{complaint['id']}] {complaint['title']} - ✅ 완료"):
+                            st.write(f"**카테고리:** {COMPLAINT_CATEGORIES.get(complaint['category'], complaint['category'])}")
+                            st.write(f"**긴급도:** {complaint['urgency']}")
+                            st.write(f"**등록자:** {complaint['created_by']}")
+                            st.write(f"**등록일:** {complaint['created_at'][:19]}")
+                            if complaint['assigned_to']:
+                                st.write(f"**담당자:** {complaint['assigned_to']}")
+                            
+                            completed_history = [h for h in complaint['history'] if h['status'] == '완료']
+                            if completed_history:
+                                st.write(f"**완료일:** {completed_history[-1]['timestamp'][:19]}")
+                                if completed_history[-1]['note']:
+                                    st.write(f"**완료 메모:** {completed_history[-1]['note']}")
+                            
+                            st.write(f"**내용:** {complaint['content']}")
+                            
+                            st.markdown("**📜 처리 이력:**")
+                            for i, history in enumerate(complaint['history']):
+                                st.write(f"&nbsp;&nbsp;{i+1}. **{history['status']}** - {history['timestamp'][:19]}")
+                                if history['note']:
+                                    st.write(f"&nbsp;&nbsp;&nbsp;&nbsp;📝 {history['note']}")
+                else:
+                    st.info("완료된 민원이 없습니다.")
+    else:
+        st.info("등록된 민원이 없습니다.")
+
+def main():
+    st.set_page_config(
+        page_title="학교 민원처리시스템",
+        page_icon="🏫",
+        layout="wide"
+    )
+    
+    # Firebase 및 시스템 초기화
+    if 'firebase_manager' not in st.session_state:
+        st.session_state.firebase_manager = FirebaseManager()
+    
+    if 'auth_system' not in st.session_state:
+        st.session_state.auth_system = AuthSystem(st.session_state.firebase_manager)
+    
+    if 'complaint_system' not in st.session_state:
+        st.session_state.complaint_system = ComplaintSystem(st.session_state.firebase_manager)
+    
+    if not st.session_state.get('is_logged_in', False):
+        render_auth_page()
+    else:
+        render_complaint_system()
+
+if __name__ == "__main__":
+    main()
